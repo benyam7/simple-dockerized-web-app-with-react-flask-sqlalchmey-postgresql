@@ -1,0 +1,68 @@
+version: "3.5"
+
+services:
+  db:
+    image: postgres:10.5
+    container_name: postgres_working
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=<your_db_name>
+      - POSTGRES_USER=<postgres_username>
+      - POSTGRES_PASSWORD=<your_password>
+    volumes:
+      - "./repository:/docker-entrypoint-initdb.d/"
+  bussiness:
+    container_name: bussiness-sf
+    restart: always
+    build:
+      context: ./services/bussiness-service
+      dockerfile: Dockerfile
+    ports:
+      - "7000:80"
+    volumes:
+      - ./services/bussiness-service:/usr/src/app
+    depends_on:
+      - "db"
+  head:
+    container_name: head-sf
+    restart: always
+    build:
+      context: ./services/head-serv
+      dockerfile: Dockerfile
+    ports:
+      - "6000:80"
+    volumes:
+      - ./services/head-serv:/usr/src/app
+    depends_on:
+      - "db"
+  sport:
+    container_name: sport-sf
+    restart: always
+    build:
+      context: ./services/sport-service
+      dockerfile: Dockerfile
+    ports:
+      - "9000:80"
+    volumes:
+      - ./services/sport-service:/usr/src/app
+    depends_on:
+      - "db"
+  ui:
+    container_name: news-react
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - "./client:/usr/src/app"
+      - "/usr/src/app/node_modules"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - "sport"
+      - "bussiness"
+      - "head"
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - HOST_URL=http://192.168.99.100
